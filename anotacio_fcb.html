@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estudi de Sentiments FCB</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@300;400;500&display=swap');
+
+  :root {
+    --blau: #004D98;
+    --granat: #A50044;
+    --or: #EDBB00;
+    --negre: #0a0a0a;
+    --gris-fosc: #1a1a1a;
+    --gris: #2e2e2e;
+    --gris-clar: #f0f0f0;
+    --blanc: #ffffff;
+    --text-mut: #888;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--negre);
+    color: var(--blanc);
+    font-family: 'Barlow', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--blau);
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .header-stripe {
+    height: 6px;
+    background: repeating-linear-gradient(90deg, var(--blau) 0px, var(--blau) 50px, var(--granat) 50px, var(--granat) 100px);
+  }
+  .header-inner {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px 32px;
+  }
+  .escudo {
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+  }
+  .header-text h1 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 22px;
+    letter-spacing: 0.5px;
+    line-height: 1.1;
+  }
+  .header-text p {
+    font-size: 12px;
+    opacity: 0.75;
+    margin-top: 3px;
+    font-weight: 400;
+  }
+
+  /* ── PROGRESS ── */
+  .progress-bar-wrap {
+    background: rgba(0,0,0,0.3);
+    height: 4px;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--or);
+    transition: width 0.4s ease;
+  }
+
+  /* ── CONTAINER ── */
+  .container {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 32px 20px 60px;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── INTRO ── */
+  .intro-badge {
+    display: inline-block;
+    background: var(--granat);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 2px;
+    margin-bottom: 20px;
+  }
+  .intro-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 38px;
+    line-height: 1.05;
+    margin-bottom: 16px;
+  }
+  .intro-title span { color: var(--or); }
+  .intro-desc {
+    font-size: 15px;
+    line-height: 1.7;
+    color: #ccc;
+    margin-bottom: 28px;
+    max-width: 560px;
+  }
+
+  /* ── FORM ELEMENTS ── */
+  .field {
+    margin-bottom: 20px;
+  }
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--or);
+    margin-bottom: 8px;
+  }
+  .field select, .field input[type="text"] {
+    width: 100%;
+    background: var(--gris);
+    border: 1px solid #444;
+    border-radius: 6px;
+    color: var(--blanc);
+    font-family: 'Barlow', sans-serif;
+    font-size: 15px;
+    padding: 12px 16px;
+    appearance: none;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field select:focus, .field input:focus {
+    border-color: var(--blau);
+  }
+  .field select option { background: #2e2e2e; }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-block;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 14px 32px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-primary {
+    background: var(--blau);
+    color: var(--blanc);
+  }
+  .btn-primary:hover { background: #0060bf; transform: translateY(-1px); }
+  .btn-granat {
+    background: var(--granat);
+    color: var(--blanc);
+  }
+  .btn-granat:hover { background: #cc0055; transform: translateY(-1px); }
+  .btn-outline {
+    background: transparent;
+    color: var(--blanc);
+    border: 1px solid #444;
+  }
+  .btn-outline:hover { border-color: #888; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+  /* ── COMMENT CARD ── */
+  .comment-counter {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-mut);
+    margin-bottom: 12px;
+  }
+  .comment-box {
+    background: var(--gris-fosc);
+    border-left: 4px solid var(--blau);
+    border-radius: 0 8px 8px 0;
+    padding: 20px 24px;
+    margin-bottom: 28px;
+    font-size: 16px;
+    line-height: 1.65;
+    color: #e8e8e8;
+    position: relative;
+  }
+  .comment-box::before {
+    content: '"';
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 60px;
+    color: var(--blau);
+    opacity: 0.3;
+    position: absolute;
+    top: -4px;
+    right: 16px;
+    line-height: 1;
+  }
+
+  /* ── SCALE BUTTONS ── */
+  .scale-group {
+    margin-bottom: 24px;
+  }
+  .scale-group .field-label {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--or);
+    margin-bottom: 10px;
+  }
+  .scale-group .field-sublabel {
+    font-size: 12px;
+    color: var(--text-mut);
+    margin-bottom: 10px;
+    margin-top: -6px;
+  }
+  .scale-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .scale-btn {
+    flex: 1;
+    min-width: 60px;
+    padding: 10px 6px;
+    background: var(--gris);
+    border: 1.5px solid #3a3a3a;
+    border-radius: 6px;
+    color: #ccc;
+    font-family: 'Barlow', sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1.3;
+  }
+  .scale-btn:hover { border-color: #666; color: white; }
+  .scale-btn.selected {
+    background: var(--blau);
+    border-color: var(--blau);
+    color: white;
+    font-weight: 500;
+  }
+  .scale-btn .val {
+    display: block;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  /* Emoció grid */
+  .emotion-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 8px;
+  }
+  .emotion-btn {
+    padding: 10px 8px;
+    background: var(--gris);
+    border: 1.5px solid #3a3a3a;
+    border-radius: 6px;
+    color: #ccc;
+    font-family: 'Barlow', sans-serif;
+    font-size: 13px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .emotion-btn:hover { border-color: #666; color: white; }
+  .emotion-btn.selected {
+    background: var(--granat);
+    border-color: var(--granat);
+    color: white;
+    font-weight: 500;
+  }
+
+  /* Select estilitzat */
+  .styled-select {
+    position: relative;
+  }
+  .styled-select::after {
+    content: '▾';
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-mut);
+    pointer-events: none;
+  }
+  .styled-select select {
+    padding-right: 36px;
+  }
+
+  /* ── SEPARADOR ── */
+  .divider {
+    border: none;
+    border-top: 1px solid #2a2a2a;
+    margin: 28px 0;
+  }
+
+  /* ── NAVIGATION ── */
+  .nav-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 32px;
+  }
+  .nav-row .spacer { flex: 1; }
+
+  /* ── THANK YOU ── */
+  .thanks-icon {
+    width: 64px;
+    height: 64px;
+    background: var(--blau);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    margin-bottom: 24px;
+  }
+  .thanks-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 36px;
+    margin-bottom: 12px;
+  }
+  .thanks-desc {
+    color: #aaa;
+    font-size: 15px;
+    line-height: 1.7;
+    max-width: 480px;
+  }
+
+  /* ── ADMIN ── */
+  .admin-panel {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid #2a2a2a;
+  }
+  .admin-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-mut);
+    margin-bottom: 12px;
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .stat-card {
+    background: var(--gris-fosc);
+    border-radius: 8px;
+    padding: 14px;
+    text-align: center;
+  }
+  .stat-val {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--or);
+  }
+  .stat-lbl {
+    font-size: 11px;
+    color: var(--text-mut);
+    margin-top: 2px;
+  }
+
+  /* ── ALERT ── */
+  .alert {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-size: 13px;
+    color: #bbb;
+    margin-bottom: 20px;
+  }
+  .alert.error { border-color: var(--granat); color: #ffaaaa; }
+
+  @media (max-width: 480px) {
+    .field-row { grid-template-columns: 1fr; }
+    .intro-title { font-size: 28px; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-stripe"></div>
+  <div class="header-inner">
+    <svg class="escudo" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+      <path d="M50 5 L90 20 L90 65 Q90 95 50 115 Q10 95 10 65 L10 20 Z" fill="#004D98" stroke="#EDBB00" stroke-width="3"/>
+      <rect x="10" y="20" width="36" height="30" fill="#A50044"/>
+      <rect x="54" y="20" width="36" height="30" fill="#A50044"/>
+      <rect x="10" y="50" width="36" height="35" fill="#004D98"/>
+      <rect x="54" y="50" width="36" height="35" fill="#004D98"/>
+      <rect x="46" y="20" width="8" height="95" fill="#EDBB00"/>
+      <rect x="10" y="47" width="80" height="6" fill="#EDBB00"/>
+    </svg>
+    <div class="header-text">
+      <h1>Estudi de Sentiments del FC Barcelona</h1>
+      <p>Universitat · Treball de Fi de Grau · Anotació de comentaris</p>
+    </div>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ══ PANTALLA 1: INTRO ══ -->
+  <div class="screen active" id="screen-intro">
+    <div class="intro-badge">Participació voluntària · Anònim</div>
+    <h2 class="intro-title">La teva opinió<br><span>és la dada.</span></h2>
+    <p class="intro-desc">
+      Aquest estudi analitza el sentiment dels comentaris d'Instagram del FC Barcelona.
+      Se't mostraran <strong>5 comentaris reals</strong> i hauràs de classificar-los
+      segons diversos criteris emocionals.<br><br>
+      Triga aproximadament <strong>3–5 minuts</strong>. Les respostes són completament anònimes.
+    </p>
+    <button class="btn btn-primary" onclick="goToProfile()">Començar →</button>
+  </div>
+
+  <!-- ══ PANTALLA 2: PERFIL ══ -->
+  <div class="screen" id="screen-profile">
+    <div class="intro-badge">Pas 1 de 2 · Perfil</div>
+    <h2 class="intro-title" style="font-size:28px; margin-bottom:24px;">Dades del <span>participant</span></h2>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Gènere</label>
+        <div class="styled-select">
+          <select id="p-genere">
+            <option value="">Selecciona...</option>
+            <option>Home</option>
+            <option>Dona</option>
+            <option>No binari</option>
+            <option>Prefereixo no dir-ho</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Rang d'edat</label>
+        <div class="styled-select">
+          <select id="p-edat">
+            <option value="">Selecciona...</option>
+            <option>Menys de 18</option>
+            <option>18–24</option>
+            <option>25–34</option>
+            <option>35–44</option>
+            <option>45–54</option>
+            <option>55 o més</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>País o regió de residència</label>
+      <div class="styled-select">
+        <select id="p-pais">
+          <option value="">Selecciona...</option>
+          <option>Catalunya</option>
+          <option>Espanya (fora de Catalunya)</option>
+          <option>Europa (fora d'Espanya)</option>
+          <option>Amèrica Llatina</option>
+          <option>Amèrica del Nord</option>
+          <option>Àfrica</option>
+          <option>Àsia</option>
+          <option>Oceania</option>
+          <option>Altre</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Relació amb el FC Barcelona</label>
+      <div class="styled-select">
+        <select id="p-relacio">
+          <option value="">Selecciona...</option>
+          <option>Soci/a del club</option>
+          <option>Abonat/da (camp)</option>
+          <option>Seguidor/a per xarxes socials</option>
+          <option>Aficionat/da general</option>
+          <option>No soc seguidor/a del Barça</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="profile-error" class="alert error" style="display:none">
+      Si us plau, respon totes les preguntes de perfil.
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-outline" onclick="showScreen('screen-intro')">← Enrere</button>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" onclick="startAnnotation()">Continuar →</button>
+    </div>
+  </div>
+
+  <!-- ══ PANTALLA 3: ANOTACIÓ ══ -->
+  <div class="screen" id="screen-annotation">
+    <div class="comment-counter" id="commentCounter">Comentari 1 de 5</div>
+
+    <div class="comment-box" id="commentText">–</div>
+
+    <!-- F1: Valence -->
+    <div class="scale-group">
+      <div class="field-label">F1 · València emocional</div>
+      <div class="field-sublabel">Quin to general té el comentari?</div>
+      <div class="scale-buttons" id="f1-buttons">
+        <button class="scale-btn" data-val="-2" onclick="selectScale('f1',-2,this)"><span class="val">−2</span>Molt negatiu</button>
+        <button class="scale-btn" data-val="-1" onclick="selectScale('f1',-1,this)"><span class="val">−1</span>Negatiu</button>
+        <button class="scale-btn" data-val="0"  onclick="selectScale('f1',0,this)"><span class="val">0</span>Neutre</button>
+        <button class="scale-btn" data-val="1"  onclick="selectScale('f1',1,this)"><span class="val">+1</span>Positiu</button>
+        <button class="scale-btn" data-val="2"  onclick="selectScale('f1',2,this)"><span class="val">+2</span>Molt positiu</button>
+      </div>
+    </div>
+
+    <!-- F2: Arousal -->
+    <div class="scale-group">
+      <div class="field-label">F2 · Activació emocional (Arousal)</div>
+      <div class="field-sublabel">Quina intensitat energètica transmet?</div>
+      <div class="scale-buttons" id="f2-buttons">
+        <button class="scale-btn" data-val="-2" onclick="selectScale('f2',-2,this)"><span class="val">−2</span>Molt passiu</button>
+        <button class="scale-btn" data-val="-1" onclick="selectScale('f2',-1,this)"><span class="val">−1</span>Baix</button>
+        <button class="scale-btn" data-val="0"  onclick="selectScale('f2',0,this)"><span class="val">0</span>Moderat</button>
+        <button class="scale-btn" data-val="1"  onclick="selectScale('f2',1,this)"><span class="val">+1</span>Alt</button>
+        <button class="scale-btn" data-val="2"  onclick="selectScale('f2',2,this)"><span class="val">+2</span>Extrem. actiu</button>
+      </div>
+    </div>
+
+    <!-- F3: Emoció -->
+    <div class="scale-group">
+      <div class="field-label">F3 · Emoció específica</div>
+      <div class="field-sublabel">Quina emoció predomina?</div>
+      <div class="emotion-grid" id="f3-buttons">
+        <button class="emotion-btn" onclick="selectEmotion(this)">Alegria</button>
+        <button class="emotion-btn" onclick="selectEmotion(this)">Orgull</button>
+        <button class="emotion-btn" onclick="selectEmotion(this)">Esperança</button>
+        <button class="emotion-btn" onclick="selectEmotion(this)">Frustració</button>
+        <button class="emotion-btn" onclick="selectEmotion(this)">Ira</button>
+        <button class="emotion-btn" onclick="selectEmotion(this)">Decepció</button>
+        <button class="emotion-btn" onclick="selectEmotion(this)">Por</button>
+        <button class="emotion-btn" onclick="selectEmotion(this)">Sorpresa</button>
+        <button class="emotion-btn" onclick="selectEmotion(this)">Humor</button>
+        <button class="emotion-btn" onclick="selectEmotion(this)">Indeterminat</button>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- F4: Target -->
+    <div class="scale-group">
+      <div class="field-label">F4 · Target (objectiu del comentari)</div>
+      <div class="field-sublabel">A qui o a què es refereix principalment?</div>
+      <div class="emotion-grid" id="f4-buttons">
+        <button class="emotion-btn" onclick="selectTarget('f4',this)">Equip</button>
+        <button class="emotion-btn" onclick="selectTarget('f4',this)">Jugador</button>
+        <button class="emotion-btn" onclick="selectTarget('f4',this)">Entrenador</button>
+        <button class="emotion-btn" onclick="selectTarget('f4',this)">Directiva</button>
+        <button class="emotion-btn" onclick="selectTarget('f4',this)">Afició</button>
+        <button class="emotion-btn" onclick="selectTarget('f4',this)">Àrbitre</button>
+        <button class="emotion-btn" onclick="selectTarget('f4',this)">Rival</button>
+        <button class="emotion-btn" onclick="selectTarget('f4',this)">Competició</button>
+        <button class="emotion-btn" onclick="selectTarget('f4',this)">Indeterminat</button>
+      </div>
+    </div>
+
+    <!-- F5: Intenció -->
+    <div class="scale-group">
+      <div class="field-label">F5 · Intenció comunicativa</div>
+      <div class="field-sublabel">Quin és l'objectiu de qui escriu?</div>
+      <div class="emotion-grid" id="f5-buttons">
+        <button class="emotion-btn" onclick="selectTarget('f5',this)">Suport</button>
+        <button class="emotion-btn" onclick="selectTarget('f5',this)">Elogi</button>
+        <button class="emotion-btn" onclick="selectTarget('f5',this)">Crítica constructiva</button>
+        <button class="emotion-btn" onclick="selectTarget('f5',this)">Queixa</button>
+        <button class="emotion-btn" onclick="selectTarget('f5',this)">Atac</button>
+        <button class="emotion-btn" onclick="selectTarget('f5',this)">Suggeriment</button>
+        <button class="emotion-btn" onclick="selectTarget('f5',this)">Pregunta</button>
+        <button class="emotion-btn" onclick="selectTarget('f5',this)">Broma</button>
+        <button class="emotion-btn" onclick="selectTarget('f5',this)">Irrellevant</button>
+      </div>
+    </div>
+
+    <!-- F6: Respecte -->
+    <div class="scale-group">
+      <div class="field-label">F6 · Nivell de respecte / toxicitat</div>
+      <div class="field-sublabel">Com de respectuós és el to?</div>
+      <div class="scale-buttons" id="f6-buttons">
+        <button class="scale-btn" data-val="-2" onclick="selectScale('f6',-2,this)"><span class="val">−2</span>Molt tòxic</button>
+        <button class="scale-btn" data-val="-1" onclick="selectScale('f6',-1,this)"><span class="val">−1</span>Ofensiu</button>
+        <button class="scale-btn" data-val="0"  onclick="selectScale('f6',0,this)"><span class="val">0</span>Neutre</span></button>
+        <button class="scale-btn" data-val="1"  onclick="selectScale('f6',1,this)"><span class="val">+1</span>Educat</button>
+        <button class="scale-btn" data-val="2"  onclick="selectScale('f6',2,this)"><span class="val">+2</span>Molt resp.</button>
+      </div>
+    </div>
+
+    <!-- F7: Seguretat -->
+    <div class="scale-group">
+      <div class="field-label">F7 · Seguretat en la classificació</div>
+      <div class="field-sublabel">Quant clar t'ha semblat el comentari per classificar?</div>
+      <div class="scale-buttons" id="f7-buttons">
+        <button class="scale-btn" data-val="1" onclick="selectScale('f7',1,this)"><span class="val">1</span>Molt difícil</button>
+        <button class="scale-btn" data-val="2" onclick="selectScale('f7',2,this)"><span class="val">2</span>Difícil</button>
+        <button class="scale-btn" data-val="3" onclick="selectScale('f7',3,this)"><span class="val">3</span>Moderat</button>
+        <button class="scale-btn" data-val="4" onclick="selectScale('f7',4,this)"><span class="val">4</span>Fàcil</button>
+        <button class="scale-btn" data-val="5" onclick="selectScale('f7',5,this)"><span class="val">5</span>Molt clar</button>
+      </div>
+    </div>
+
+    <div id="annotation-error" class="alert error" style="display:none">
+      Si us plau, respon tots els camps abans de continuar.
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-outline" id="btnPrev" onclick="prevComment()">← Anterior</button>
+      <div class="spacer"></div>
+      <button class="btn btn-granat" id="btnNext" onclick="nextComment()">Següent →</button>
+    </div>
+  </div>
+
+  <!-- ══ PANTALLA 4: GRÀCIES ══ -->
+  <div class="screen" id="screen-thanks">
+    <div class="thanks-icon">✓</div>
+    <h2 class="thanks-title">Moltes gràcies!</h2>
+    <p class="thanks-desc">
+      Les teves respostes han estat guardades correctament i contribuiran
+      a l'estudi de sentiments del FC Barcelona.<br><br>
+      Si vols compartir l'enquesta, pots enviar l'enllaç a altres aficionats del Barça.
+    </p>
+
+    <div class="admin-panel">
+      <div class="admin-title">Estadístiques de l'estudi (actualitzades)</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-val" id="stat-participants">–</div>
+          <div class="stat-lbl">Participants</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="stat-annotations">–</div>
+          <div class="stat-lbl">Anotacions totals</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="stat-coverage">–%</div>
+          <div class="stat-lbl">Cobertura</div>
+        </div>
+      </div>
+      <button class="btn btn-outline" onclick="exportCSV()" style="font-size:13px; padding:10px 20px;">
+        Exportar resultats CSV
+      </button>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ══════════════════════════════════════════════
+// DADES: Substitueix COMMENTS amb els teus 380 comentaris
+// Format: array de strings
+// ══════════════════════════════════════════════
+const COMMENTS = [
+  "Lo que sois es gilipo.... ni viene ni toca esto , viva España y aunque algunos catalanes no lo acepten , Cataluña está en España, saludos 👌",
+  "Monaco 2- Barca 1 👏👏👏🙌🙌🤍🤍🤍🤍",
+  "Los clásicos ya no son iguales 😢 los clásicos entre Real Madrid y Barcelona paralizaban el planeta , ahora el Barca bajo tanto el nivel competitivo",
+  "Voten a Ansu Fati de una vez..!! El peor 10 de la Liga 🤦🏻‍♂️",
+  "El que nos dará la sexta?🔥",
+  "خطيه فرحانه برشلونه 😂",
+  "captain pedrinho x raphinha ❤️",
+  "He became younger wtf😂",
+  "Vamos, Vamos Mark.",
+  "Ryan el superhéroe 🔥"
+  // ← AFEGEIX AQUÍ ELS 380 COMENTARIS REALS
+];
+
+const COMMENTS_PER_PERSON = 5;
+const ANNOTATORS_PER_COMMENT = 3;
+
+// ══════════════════════════════════════════════
+// STORAGE (usa window.storage si disponible, sino localStorage)
+// ══════════════════════════════════════════════
+async function storageGet(key) {
+  try {
+    if (window.storage) {
+      const r = await window.storage.get(key, true);
+      return r ? JSON.parse(r.value) : null;
+    }
+  } catch(e) {}
+  try {
+    const v = localStorage.getItem(key);
+    return v ? JSON.parse(v) : null;
+  } catch(e) { return null; }
+}
+
+async function storageSet(key, val) {
+  const str = JSON.stringify(val);
+  try {
+    if (window.storage) {
+      await window.storage.set(key, str, true);
+      return;
+    }
+  } catch(e) {}
+  try { localStorage.setItem(key, str); } catch(e) {}
+}
+
+// ══════════════════════════════════════════════
+// ESTAT
+// ══════════════════════════════════════════════
+let profile = {};
+let assignedComments = [];   // índexs dels comentaris assignats
+let currentIdx = 0;          // índex dins assignedComments
+let answers = [];            // respostes parcials
+let sessionId = Date.now() + '-' + Math.random().toString(36).slice(2,7);
+
+// Selecció actual per cada F
+let cur = { f1: null, f2: null, f3: null, f4: null, f5: null, f6: null, f7: null };
+
+// ══════════════════════════════════════════════
+// ASSIGNACIÓ ALEATÒRIA AMB CONTROL DE COBERTURA
+// ══════════════════════════════════════════════
+async function assignComments() {
+  // Carregar comptadors actuals
+  let counts = await storageGet('fcb_counts') || {};
+  COMMENTS.forEach((_, i) => { if (!counts[i]) counts[i] = 0; });
+
+  // Ordenar per menys anotats primer, afegir aleatorietat entre empats
+  const indices = Object.keys(counts).map(Number);
+  indices.sort((a, b) => {
+    const diff = counts[a] - counts[b];
+    if (diff !== 0) return diff;
+    return Math.random() - 0.5;
+  });
+
+  // Agafar els primers COMMENTS_PER_PERSON que no hagin arribat al màxim
+  const available = indices.filter(i => counts[i] < ANNOTATORS_PER_COMMENT);
+  const selected = available.slice(0, COMMENTS_PER_PERSON);
+
+  // Si no n'hi ha prou, omplir amb qualsevol
+  while (selected.length < COMMENTS_PER_PERSON && indices.length > selected.length) {
+    const remaining = indices.filter(i => !selected.includes(i));
+    if (remaining.length === 0) break;
+    selected.push(remaining[Math.floor(Math.random() * remaining.length)]);
+  }
+
+  return selected;
+}
+
+// ══════════════════════════════════════════════
+// NAVEGACIÓ ENTRE PANTALLES
+// ══════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function goToProfile() {
+  showScreen('screen-profile');
+  updateProgress(1, 7);
+}
+
+async function startAnnotation() {
+  const genere  = document.getElementById('p-genere').value;
+  const edat    = document.getElementById('p-edat').value;
+  const pais    = document.getElementById('p-pais').value;
+  const relacio = document.getElementById('p-relacio').value;
+
+  if (!genere || !edat || !pais || !relacio) {
+    document.getElementById('profile-error').style.display = 'block';
+    return;
+  }
+  document.getElementById('profile-error').style.display = 'none';
+
+  profile = { genere, edat, pais, relacio };
+  assignedComments = await assignComments();
+  currentIdx = 0;
+  answers = [];
+
+  showScreen('screen-annotation');
+  renderComment();
+}
+
+// ══════════════════════════════════════════════
+// RENDERITZAR COMENTARI ACTUAL
+// ══════════════════════════════════════════════
+function renderComment() {
+  const total = assignedComments.length;
+  const n = currentIdx + 1;
+
+  document.getElementById('commentCounter').textContent = `Comentari ${n} de ${total}`;
+  document.getElementById('commentText').textContent = COMMENTS[assignedComments[currentIdx]];
+
+  // Reset seleccions
+  cur = { f1: null, f2: null, f3: null, f4: null, f5: null, f6: null, f7: null };
+  document.querySelectorAll('.scale-btn, .emotion-btn').forEach(b => b.classList.remove('selected'));
+
+  // Restaurar si ja s'havia respost
+  if (answers[currentIdx]) {
+    const a = answers[currentIdx];
+    restoreScale('f1', a.f1);
+    restoreScale('f2', a.f2);
+    restoreEmotion('f3-buttons', a.f3);
+    restoreEmotion('f4-buttons', a.f4);
+    restoreEmotion('f5-buttons', a.f5);
+    restoreScale('f6', a.f6);
+    restoreScale('f7', a.f7);
+  }
+
+  document.getElementById('btnPrev').style.visibility = currentIdx === 0 ? 'hidden' : 'visible';
+  document.getElementById('btnNext').textContent = currentIdx === total - 1 ? 'Enviar ✓' : 'Següent →';
+  document.getElementById('annotation-error').style.display = 'none';
+
+  updateProgress(2 + currentIdx, 1 + total);
+}
+
+function restoreScale(field, val) {
+  if (val === null || val === undefined) return;
+  const btns = document.querySelectorAll(`#${field}-buttons .scale-btn`);
+  btns.forEach(b => {
+    if (parseInt(b.dataset.val) === val) {
+      b.classList.add('selected');
+      cur[field] = val;
+    }
+  });
+}
+
+function restoreEmotion(groupId, val) {
+  if (!val) return;
+  document.querySelectorAll(`#${groupId} .emotion-btn`).forEach(b => {
+    if (b.textContent === val) {
+      b.classList.add('selected');
+      const field = groupId.replace('-buttons','');
+      cur[field] = val;
+    }
+  });
+}
+
+// ══════════════════════════════════════════════
+// SELECCIÓ D'OPCIONS
+// ══════════════════════════════════════════════
+function selectScale(field, val, btn) {
+  document.querySelectorAll(`#${field}-buttons .scale-btn`).forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  cur[field] = val;
+}
+
+function selectEmotion(btn) {
+  const group = btn.closest('.emotion-grid');
+  group.querySelectorAll('.emotion-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  // Determinar quin field és
+  const groupId = group.id;
+  const field = groupId.replace('-buttons','');
+  cur[field] = btn.textContent;
+}
+
+function selectTarget(field, btn) {
+  document.querySelectorAll(`#${field}-buttons .emotion-btn`).forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  cur[field] = btn.textContent;
+}
+
+// ══════════════════════════════════════════════
+// VALIDACIÓ
+// ══════════════════════════════════════════════
+function validateCurrent() {
+  return cur.f1 !== null && cur.f2 !== null && cur.f3 !== null &&
+         cur.f4 !== null && cur.f5 !== null && cur.f6 !== null && cur.f7 !== null;
+}
+
+// ══════════════════════════════════════════════
+// NAVEGACIÓ ENTRE COMENTARIS
+// ══════════════════════════════════════════════
+function nextComment() {
+  if (!validateCurrent()) {
+    document.getElementById('annotation-error').style.display = 'block';
+    document.getElementById('annotation-error').scrollIntoView({behavior:'smooth'});
+    return;
+  }
+  document.getElementById('annotation-error').style.display = 'none';
+
+  answers[currentIdx] = {
+    comment_idx: assignedComments[currentIdx],
+    comment_text: COMMENTS[assignedComments[currentIdx]],
+    f1: cur.f1, f2: cur.f2, f3: cur.f3,
+    f4: cur.f4, f5: cur.f5, f6: cur.f6, f7: cur.f7
+  };
+
+  if (currentIdx < assignedComments.length - 1) {
+    currentIdx++;
+    renderComment();
+    window.scrollTo(0,0);
+  } else {
+    submitAll();
+  }
+}
+
+function prevComment() {
+  // Guardar resposta parcial si existeix
+  if (cur.f1 !== null) {
+    answers[currentIdx] = {
+      comment_idx: assignedComments[currentIdx],
+      comment_text: COMMENTS[assignedComments[currentIdx]],
+      f1: cur.f1, f2: cur.f2, f3: cur.f3,
+      f4: cur.f4, f5: cur.f5, f6: cur.f6, f7: cur.f7
+    };
+  }
+  currentIdx--;
+  renderComment();
+  window.scrollTo(0,0);
+}
+
+// ══════════════════════════════════════════════
+// ENVIAMENT FINAL
+// ══════════════════════════════════════════════
+async function submitAll() {
+  // Construir registre
+  const record = {
+    session_id: sessionId,
+    timestamp: new Date().toISOString(),
+    profile,
+    annotations: answers
+  };
+
+  // Guardar sessió individual
+  await storageSet(`fcb_session_${sessionId}`, record);
+
+  // Actualitzar comptadors de cobertura
+  let counts = await storageGet('fcb_counts') || {};
+  answers.forEach(a => {
+    counts[a.comment_idx] = (counts[a.comment_idx] || 0) + 1;
+  });
+  await storageSet('fcb_counts', counts);
+
+  // Actualitzar llista de sessions
+  let sessions = await storageGet('fcb_sessions') || [];
+  sessions.push(sessionId);
+  await storageSet('fcb_sessions', sessions);
+
+  showScreen('screen-thanks');
+  updateProgress(7, 7);
+  await updateStats();
+}
+
+// ══════════════════════════════════════════════
+// ESTADÍSTIQUES
+// ══════════════════════════════════════════════
+async function updateStats() {
+  const sessions = await storageGet('fcb_sessions') || [];
+  const counts   = await storageGet('fcb_counts')   || {};
+
+  const totalAnnotations = Object.values(counts).reduce((a,b) => a+b, 0);
+  const covered = Object.values(counts).filter(v => v >= ANNOTATORS_PER_COMMENT).length;
+  const pct = COMMENTS.length > 0 ? Math.round(covered / COMMENTS.length * 100) : 0;
+
+  document.getElementById('stat-participants').textContent  = sessions.length;
+  document.getElementById('stat-annotations').textContent   = totalAnnotations;
+  document.getElementById('stat-coverage').textContent      = pct + '%';
+}
+
+// ══════════════════════════════════════════════
+// EXPORTAR CSV
+// ══════════════════════════════════════════════
+async function exportCSV() {
+  const sessions = await storageGet('fcb_sessions') || [];
+  const rows = [];
+
+  const header = [
+    'session_id','timestamp',
+    'genere','edat','pais','relacio',
+    'comment_idx','comment_text',
+    'F1_valence','F2_arousal','F3_emocio',
+    'F4_target','F5_intencio','F6_respecte','F7_seguretat'
+  ];
+  rows.push(header.join(','));
+
+  for (const sid of sessions) {
+    const rec = await storageGet(`fcb_session_${sid}`);
+    if (!rec) continue;
+    const p = rec.profile;
+    for (const a of rec.annotations) {
+      const row = [
+        rec.session_id, rec.timestamp,
+        p.genere, p.edat, p.pais, p.relacio,
+        a.comment_idx, `"${(a.comment_text||'').replace(/"/g,'""')}"`,
+        a.f1, a.f2, `"${a.f3}"`,
+        `"${a.f4}"`, `"${a.f5}"`, a.f6, a.f7
+      ];
+      rows.push(row.join(','));
+    }
+  }
+
+  const csv = rows.join('\n');
+  const blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `fcb_anotacions_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ══════════════════════════════════════════════
+// PROGRESS BAR
+// ══════════════════════════════════════════════
+function updateProgress(step, total) {
+  const pct = Math.round((step / total) * 100);
+  document.getElementById('progressBar').style.width = pct + '%';
+}
+</script>
+</body>
+</html>
