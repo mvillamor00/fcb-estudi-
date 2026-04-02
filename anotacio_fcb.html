@@ -563,10 +563,7 @@
 </div>
 
 <script>
-const API_TOKEN = 'patPO6FWMcodifJWw.8889920d9b8b508502fedbce8c5d80c4c3d108e69b8bc4777861160f68e7d219';
-const BASE_ID   = 'apploSz2lhz5pDWah';
-const TBL_COM   = 'tblptu0WM4rxdSxxe';
-const TBL_ANOT  = 'tbl84UsmWRHPVFnBk';
+const PROXY_URL = 'https://script.google.com/macros/s/AKfycbx2T7cCC30DGc2Bb-F6xVJVghRNGwchoITT4TcOJt7TxQYDYEJ4f8JPnWSR9ajFBAjx/exec';
 const LIMIT_RESPOSTES = 3;
 const COMENTARIS_PER_SESSIO = 2;
 
@@ -577,22 +574,24 @@ let totesRespostes = [];
 
 const DIMS = ['f1','f2','f3','f4','f5','f6','f7'];
 
-async function airtableFetch(url, options = {}) {
-  const resp = await fetch(url, {
-    ...options,
-    headers: {
-      'Authorization': `Bearer ${API_TOKEN}`,
-      'Content-Type': 'application/json',
-      ...(options.headers || {})
-    }
+async function proxyGet() {
+  const resp = await fetch(PROXY_URL, { method: 'GET' });
+  if (!resp.ok) throw new Error('Error GET proxy: ' + resp.status);
+  return resp.json();
+}
+
+async function proxyPost(body) {
+  const resp = await fetch(PROXY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(body)
   });
-  if (!resp.ok) throw new Error(`Airtable error: ${resp.status}`);
+  if (!resp.ok) throw new Error('Error POST proxy: ' + resp.status);
   return resp.json();
 }
 
 async function obtenirComentaris() {
-  const url = `https://api.airtable.com/v0/${BASE_ID}/${TBL_COM}?filterByFormula=n_respostes<${LIMIT_RESPOSTES}&sort[0][field]=comentari_id&sort[0][direction]=asc&maxRecords=50`;
-  const data = await airtableFetch(url);
+  const data = await proxyGet();
   return data.records || [];
 }
 
@@ -696,29 +695,28 @@ async function guardarTot() {
 
   try {
     for (const { com, respostes } of totesRespostes) {
-      // Guardar anotació
-      await airtableFetch(`https://api.airtable.com/v0/${BASE_ID}/${TBL_ANOT}`, {
-        method: 'POST',
-        body: JSON.stringify({
-          fields: {
-            comentari_id: com.fields.comentari_id,
-            text_comentari: com.fields.text || '',
-            f1_valence:    respostes.f1,
-            f2_arousal:    respostes.f2,
-            f3_emotion:    respostes.f3,
-            f4_target:     respostes.f4,
-            f5_intent:     respostes.f5,
-            f6_respect:    respostes.f6,
-            f7_confidence: respostes.f7,
-          }
-        })
+      // Guardar anotació via proxy
+      await proxyPost({
+        action: 'crear_anotacio',
+        fields: {
+          comentari_id:   com.fields.comentari_id,
+          text_comentari: com.fields.text || '',
+          f1_valence:     respostes.f1,
+          f2_arousal:     respostes.f2,
+          f3_emotion:     respostes.f3,
+          f4_target:      respostes.f4,
+          f5_intent:      respostes.f5,
+          f6_respect:     respostes.f6,
+          f7_confidence:  respostes.f7,
+        }
       });
 
-      // Actualitzar comptador
+      // Actualitzar comptador via proxy
       const nouCompte = (com.fields.n_respostes || 0) + 1;
-      await airtableFetch(`https://api.airtable.com/v0/${BASE_ID}/${TBL_COM}/${com.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ fields: { n_respostes: nouCompte } })
+      await proxyPost({
+        action: 'actualitzar_comptador',
+        record_id:   com.id,
+        n_respostes: nouCompte
       });
     }
 
